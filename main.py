@@ -17,12 +17,16 @@ async def docs_redirect():
 
 @app.post("/register", status_code=201, tags=["Auth"])
 async def register(user: schemas.UserLogin):
-    if user.username in deta.get_users_list():
-        raise HTTPException(status_code=400, detail="Username is taken")
+    try:
+        user_data = deta.get_user_by_username(user.username)
+        if user_data:
+            raise HTTPException(status_code=400, detail="User already exists")
+    except Exception as e:
+        pass
+
     hashed_password = auth_handler.get_password_hash(user.password)
     deta.insert_user({"username": user.username, "password": hashed_password})
     return {"message": f"User {user.username} created successfully"}
-
 
 @app.post("/login", tags=["Auth"])
 async def login(user: schemas.UserLogin):
@@ -83,6 +87,11 @@ async def download_file(
     payload = request.get("state")["payload"]
     return await deta.download_file(file_key=file_key, user_key=payload["key"])
 
+
+@app.patch("/transfer")
+def transfer(user_to_transfer:str, file_key:str, request:Request, auth=Depends(auth_handler.auth_middleware)):
+    owner_key=request.get("state")["payload"]["key"]
+    return deta.transfer_file_ownership(user_to_transfer, file_key, owner_key)
 
 if __name__ == "__main__":
     import uvicorn

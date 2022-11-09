@@ -22,6 +22,13 @@ tbl_users_files = deta.Base("users_files")
 def get_user_by_username(username: str) -> schemas.User:
     return tbl_users.fetch({"username": username}).items[0]
 
+   
+
+def transfer_file_ownership(user_to_transfer:str, file_key:str, owner_key:str):
+    file_data=tbl_files.fetch({"key":file_key}).items[0]
+    if file_data["owner_key"]==owner_key:
+        tbl_files.update(key=file_key, updates={"owner_key":user_to_transfer})
+    return {"message":"Transferido"}
 
 def insert_user(user: schemas.User):
     return tbl_users.insert(user)
